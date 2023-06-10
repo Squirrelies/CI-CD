@@ -1,4 +1,4 @@
-name: Reusable workflow example
+name: C# project version detection
 
 on:
   workflow_call:
