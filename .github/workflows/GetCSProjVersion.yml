@@ -2,12 +2,18 @@ name: C# project version detection
 
 on:
   workflow_dispatch:
+    inputs:
+      config-path:
+        required: true
+        type: string
+      release-type-tag:
+        required: true
+        type: string
   workflow_call:
     inputs:
       config-path:
         required: true
         type: string
-
       release-type-tag:
         required: true
         type: string
