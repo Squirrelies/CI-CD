@@ -3,6 +3,12 @@ name: C# project version detection
 on:
   workflow_call:
     inputs:
+      repository:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
       config-path:
         required: true
         type: string
@@ -24,6 +30,13 @@ jobs:
       project-version-string-output: ${{ steps.project-version-string.outputs.Version }}
 
     steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: ${{inputs.repository}}
+        ref: ${{inputs.ref}}
+
     - name: Get project version information
       id: project-versions
       run: |
