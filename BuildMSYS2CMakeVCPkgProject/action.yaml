@@ -33,6 +33,10 @@ runs:
   using: "composite"
 
   steps:
+    - name: Set VCPKG_ROOT environment variable
+      shell: pwsh
+      run: echo 'VCPKG_ROOT=${{inputs.vcpkg-root}}' >> $env:GITHUB_ENV
+
     - name: Setup MSYS2 ${{inputs.msys2-msystem}}
       uses: msys2/setup-msys2@v2
       with:
