@@ -1,0 +1,57 @@
+name: C# project version parser
+description: Parses the version tag of a C# project.
+
+inputs:
+  repository:
+    required: true
+    description: "The repository to checkout."
+  ref:
+    required: true
+    description: "The ref to checkout."
+  csproj-path:
+    required: true
+    description: "The path to the csproj file to extract the version from."
+
+outputs:
+  Version:
+    description: "The version number."
+    value: ${{ steps.set-project-version-outputs.outputs.Version }}
+  Version-Major:
+    description: "The major version number."
+    value: ${{ steps.set-project-version-outputs.outputs.Version-Major }}
+  Version-Minor:
+    description: "The minor version number."
+    value: ${{ steps.set-project-version-outputs.outputs.Version-Minor }}
+  Version-Patch:
+    description: "The patch version number."
+    value: ${{ steps.set-project-version-outputs.outputs.Version-Patch }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout ${{inputs.repository}}@${{inputs.ref}}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        repository: ${{inputs.repository}}
+        ref: ${{inputs.ref}}
+
+    - name: Parse project version
+      id: parse-project-version
+      shell: pwsh
+      run: Select-String -Path "${{inputs.csproj-path}}" '<(?<TagName>\w*?Version)>(?<Major>\d+)(?:\.(?<Minor>\d+))(?:\.(?<Patch>\d+)|-(?<Quality>\w+)|\+(?<Tag>\w+))?(?:\.(?<Patch>\d+)|-(?<Quality>\w+)|\+(?<Tag>\w+))?(?:\.(?<Patch>\d+)|-(?<Quality>\w+)|\+(?<Tag>\w+))?</\w*?Version>' -AllMatches | Foreach-Object -Process {$_.Matches} | Foreach-Object -Process { $tagName = $_.Groups["TagName"].Value; $_.Groups | Where-Object { $_.Name -ne "0" -and $_.Name -ne "TagName"; } } | Foreach-Object -Process { $tagName + "-" + $_.Name + "=" + $_.Value >> $env:GITHUB_OUTPUT }
+
+    - name: Set project version outputs
+      id: set-project-version-outputs
+      shell: pwsh
+      run: |
+        echo 'Version=${{steps.parse-project-version.outputs.Version-Major}}.${{steps.parse-project-version.outputs.Version-Minor}}.${{steps.parse-project-version.outputs.Version-Patch}}' >> $env:GITHUB_OUTPUT
+        echo 'Version-Major=${{steps.parse-project-version.outputs.Version-Major}}' >> $env:GITHUB_OUTPUT
+        echo 'Version-Minor=${{steps.parse-project-version.outputs.Version-Minor}}' >> $env:GITHUB_OUTPUT
+        echo 'Version-Patch=${{steps.parse-project-version.outputs.Version-Patch}}' >> $env:GITHUB_OUTPUT
+
+    - name: Ensure we detected the version properly
+      id: assert-version
+      shell: pwsh
+      if: ${{ steps.set-project-version-outputs.outputs.Version == '..' }}
+      run: exit 1

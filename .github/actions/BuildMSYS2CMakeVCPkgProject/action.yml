@@ -1,0 +1,61 @@
+name: MSYS2/CMake/VCPkg Build and Test
+description: Build and test a CMake project using MSYS2 and VCPkg.
+
+inputs:
+  root-path:
+    required: true
+    description: "The root path of the CMake project."
+  msys2-msystem:
+    required: false
+    default: "CLANG64"
+    description: "The MSYS2 system to use."
+  msys2-packages:
+    required: true
+    description: "The MSYS2 packages required by this CMake project."
+  vcpkg-root:
+    required: false
+    default: "C:/vcpkg"
+    description: "The root path of the VCPkg installation."
+  preset-configuration:
+    description: "CMake Preset Configuration"
+    required: true
+  preset-configuration-tidy:
+    description: "CMake Preset Configuration for Clang-Tidy"
+    required: false
+  run-unit-tests:
+    description: "Run Unit Tests"
+    required: false
+  additional-cmake-args:
+    description: "Additional CMake Arguments"
+    required: false
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Setup MSYS2 ${{inputs.msys2-msystem}}
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{inputs.msys2-msystem}}
+        install: ${{inputs.msys2-packages}}
+
+    - name: Run CMake
+      shell: msys2 {0}
+      working-directory: ${{inputs.root-path}}
+      run: |
+        cmake --preset ${{inputs.preset-configuration}} ${{inputs.additional-cmake-args}} --fresh
+        cmake --build --preset ${{inputs.preset-configuration}}
+
+    - name: Run Clang-Tidy
+      if: ${{ !cancelled() && inputs.preset-configuration-tidy != '' }}
+      shell: msys2 {0}
+      working-directory: ${{inputs.root-path}}
+      run: |
+        cmake --preset ${{inputs.preset-configuration-tidy}} ${{inputs.additional-cmake-args}} --fresh
+        cmake --build --preset ${{inputs.preset-configuration-tidy}}
+
+    - name: Run CTest
+      if: ${{ !cancelled() && inputs.run-unit-tests == 'true' }}
+      shell: msys2 {0}
+      working-directory: ${{inputs.root-path}}
+      run: ctest --preset ${{inputs.preset-configuration}} ${{inputs.additional-cmake-args}} --output-on-failure

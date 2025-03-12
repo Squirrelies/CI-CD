@@ -1,0 +1,15 @@
+name: Get UTC DateTime
+description: Get the current DateTime in UTC formatted as yyyyMMddHHmmss.
+
+outputs:
+  UTC-DateTime:
+    description: "The DateTime as UTC formatted as yyyyMMddHHmmss."
+    value: ${{ steps.Get-UTC-DateTime.outputs.UTC-DateTime }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get current DateTime
+      id: Get-UTC-DateTime
+      shell: pwsh
+      run: echo ('UTC-DateTime=' + [System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss")) >> $env:GITHUB_OUTPUT
