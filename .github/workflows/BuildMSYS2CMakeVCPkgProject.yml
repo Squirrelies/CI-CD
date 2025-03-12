@@ -1,0 +1,93 @@
+name: MSYS2/CMake/VCPkg Build and Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        required: true
+        type: string
+        description: "The repository to checkout."
+      ref:
+        required: true
+        type: string
+        description: "The ref to checkout."
+      vcpkg-root:
+        required: false
+        default: "C:/vcpkg"
+        type: string
+        description: "The root path of the VCPkg installation."
+      msys2-msystem:
+        required: false
+        default: "CLANG64"
+        type: string
+        description: "The MSYS2 system to use."
+      msys2-packages:
+        required: true
+        type: string
+        description: "The MSYS2 packages required by this CMake project."
+      root-path:
+        required: true
+        type: string
+        description: "The root path of the CMake project."
+      preset-configuration:
+        description: "CMake Preset Configuration"
+        required: true
+        type: string
+      preset-configuration-tidy:
+        description: "CMake Preset Configuration for Clang-Tidy"
+        required: false
+        type: string
+      run-unit-tests:
+        description: "Run Unit Tests"
+        required: false
+        default: false
+        type: boolean
+      additional-cmake-args:
+        description: "Additional CMake Arguments"
+        required: false
+        type: string
+
+env:
+  VCPKG_ROOT: ${{inputs.vcpkg-root}}
+
+jobs:
+  Build:
+    name: Build
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: ${{inputs.root-path}}
+
+    steps:
+      - name: Setup MSYS2 ${{ inputs.msys2-msystem }}
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ inputs.msys2-msystem }}
+          install: ${{inputs.msys2-packages}}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{inputs.repository}}
+          ref: ${{inputs.ref}}
+
+      - name: Run CMake
+        shell: msys2 {0}
+        run: |
+          cmake --preset ${{inputs.preset-configuration}} ${{inputs.additional-cmake-args}} --fresh
+          cmake --build --preset ${{inputs.preset-configuration}}
+
+      - name: Run Clang-Tidy
+        if: ${{ !cancelled() && inputs.preset-configuration-tidy != '' }}
+        shell: msys2 {0}
+        run: |
+          cmake --preset ${{inputs.preset-configuration-tidy}} ${{inputs.additional-cmake-args}} --fresh
+          cmake --build --preset ${{inputs.preset-configuration-tidy}}
+
+      - name: Run CTest
+        if: ${{ !cancelled() && inputs.run-unit-tests == 'true' }}
+        shell: msys2 {0}
+        run: ctest --preset ${{inputs.preset-configuration}} ${{inputs.additional-cmake-args}} --output-on-failure

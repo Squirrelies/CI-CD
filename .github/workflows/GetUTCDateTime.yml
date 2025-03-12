@@ -2,21 +2,20 @@ name: Get UTC DateTime
 
 on:
   workflow_call:
-
     outputs:
-      utc-datetime:
+      UTC-DateTime:
         description: "The DateTime as UTC formatted as yyyyMMddHHmmss."
-        value: ${{ jobs.utc-datetime.outputs.utc-datetime-output }}
+        value: ${{ jobs.Get-UTC-DateTime.outputs.UTC-DateTime }}
 
 jobs:
-  utc-datetime:
+  Get-UTC-DateTime:
     name: Get UTC DateTime
     runs-on: windows-latest
 
     outputs:
-      utc-datetime-output: ${{ steps.get-datetime.outputs.UTCDateTime }}
+      UTC-DateTime: ${{ steps.Get-UTC-DateTime.outputs.UTC-DateTime }}
 
     steps:
-    - name: Get current UTC DateTime
-      id: get-datetime
-      run: echo ('UTCDateTime=' + [System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss")) >> $env:GITHUB_OUTPUT
+      - name: Get current DateTime
+        id: Get-UTC-DateTime
+        run: echo ('UTC-DateTime=' + [System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss")) >> $env:GITHUB_OUTPUT
