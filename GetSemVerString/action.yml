@@ -1,0 +1,87 @@
+name: Get SemVer 2.0.0 string
+description: Takes in a series of inputs and calculates a SemVer 2.0.0 compatible version string.
+
+inputs:
+  versionMajor:
+    required: true
+    description: "The major version number component."
+  versionMinor:
+    required: true
+    description: "The minor version number component."
+  versionPatch:
+    required: false
+    description: "The patch version number component."
+  preRelease:
+    required: false
+    description: "The pre-release version component."
+  prefixBuildMetadata:
+    required: false
+    description: "Any build metadata to prefix before auto-generated data is added."
+  versionBuild:
+    required: false
+    description: "The build version number component. This is used to build the BuildMetadata component."
+  commitHash:
+    required: false
+    description: "The source control commit hash component. This is used to build the BuildMetadata component."
+  postfixBuildMetadata:
+    required: false
+    description: "Any build metadata to postfix before auto-generated data is added."
+
+outputs:
+  Version:
+    description: "SemVer 2.0.0 compliant version string."
+    value: ${{ steps.semver-version.outputs.Version }}
+  VersionNoPreReleaseOrBuildMetadata:
+    description: "SemVer 2.0.0 compliant version string without any pre-release or build metadata."
+    value: ${{ steps.semver-version.outputs.VersionNoPreReleaseOrBuildMetadata }}
+  VersionNoBuildMetadata:
+    description: "SemVer 2.0.0 compliant version string without any build metadata."
+    value: ${{ steps.semver-version.outputs.VersionNoBuildMetadata }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Calculate SemVer 2.0.0 version string
+      id: semver-version
+      shell: pwsh
+      run: |
+        [string]$semver = "${{inputs.versionMajor}}.${{inputs.versionMinor}}";
+        if (![string]::IsNullOrWhitespace("${{inputs.versionPatch}}")) {
+          $semver += ".${{inputs.versionPatch}}";
+        }
+        else {
+          $semver += ".0"; // Patch is required, add a default value.
+        }
+
+        # Set `VersionNoPreReleaseOrBuildMetadata` output.
+        echo "VersionNoPreReleaseOrBuildMetadata=$semver" | Set-Content $env:GITHUB_OUTPUT;
+
+        if (![string]::IsNullOrWhitespace("${{inputs.preRelease}}")) {
+          $semver += "-${{inputs.preRelease}}";
+        }
+
+        # Set `VersionNoBuildMetadata` output.
+        echo "VersionNoBuildMetadata=$semver" | Set-Content $env:GITHUB_OUTPUT;
+
+        # Set `Version` output.
+        echo "Version=$semver" | Set-Content $env:GITHUB_OUTPUT;
+
+        [string]$semver_buildmetadata = "";
+        if (![string]::IsNullOrWhitespace("${{inputs.prefixBuildMetadata}}")) {
+          $semver_buildmetadata += "${{inputs.prefixBuildMetadata}}.";
+        }
+        if (![string]::IsNullOrWhitespace("${{inputs.versionBuild}}")) {
+          $semver_buildmetadata += "${{inputs.versionBuild}}.";
+        }
+        if (![string]::IsNullOrWhitespace("${{inputs.commitHash}}")) {
+          $semver_buildmetadata += "${{inputs.commitHash}}.";
+        }
+        if (![string]::IsNullOrWhitespace("${{inputs.postfixBuildMetadata}}")) {
+          $semver_buildmetadata += "${{inputs.postfixBuildMetadata}}.";
+        }
+        $semver_buildmetadata = [string]::TrimEnd($semver_buildmetadata, '.');
+
+        # Reset `Version` output.
+        if (![string]::IsNullOrWhitespace("$semver_buildmetadata")) {
+          echo "Version=$semver+$semver_buildmetadata" | Set-Content $env:GITHUB_OUTPUT;
+        }
