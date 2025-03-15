@@ -50,7 +50,7 @@ runs:
           $semver += ".${{inputs.versionPatch}}";
         }
         else {
-          $semver += ".0"; // Patch is required, add a default value.
+          $semver += ".0"; # Patch is required, add a default value.
         }
 
         # Set `VersionNoPreReleaseOrBuildMetadata` output.
