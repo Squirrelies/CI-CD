@@ -79,7 +79,7 @@ runs:
         if (![string]::IsNullOrWhitespace("${{inputs.postfixBuildMetadata}}")) {
           $semver_buildmetadata += "${{inputs.postfixBuildMetadata}}.";
         }
-        $semver_buildmetadata = [string]::TrimEnd($semver_buildmetadata, '.');
+        $semver_buildmetadata = $semver_buildmetadata.TrimEnd('.');
 
         # Reset `Version` output.
         if (![string]::IsNullOrWhitespace("$semver_buildmetadata")) {
